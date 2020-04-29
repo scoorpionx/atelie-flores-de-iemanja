@@ -18,7 +18,6 @@ class AuthController {
             await trx.rollback()
             return res.status(400).send({
                 message: 'Else ao realizar cadastro',
-                error: err,
             })
         }
     }
