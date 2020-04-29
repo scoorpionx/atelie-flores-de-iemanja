@@ -31,6 +31,7 @@ const providers = [
 const aceProviders = [
   '@adonisjs/lucid/providers/MigrationsProvider',
   '@adonisjs/websocket/providers/WsProvider',
+  'adonis-acl/providers/CommandsProvider',
 ]
 
 /*
