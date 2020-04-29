@@ -1,7 +1,7 @@
 'use strict'
 
 const Database = require('Database')
-const User = require('App/Models/User')
+const User = use('App/Models/User')
 const Role = require('Role')
 
 class AuthController {
