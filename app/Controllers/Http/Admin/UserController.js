@@ -4,6 +4,9 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
+const User = use('App/Models/User')
+const Transformer = use('App/Transformers/Admin/UserTransform')
+
 /**
  * Resourceful controller for interacting with users
  */
@@ -17,7 +20,7 @@ class UserController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ req, res, pagination }) {
+  async index ({ req, res, pagination, transform }) {
     const name = req.input('name')
     const query = User.query()
 
@@ -27,19 +30,8 @@ class UserController {
     }
 
     const users = await query.paginate(pagination.page, pagination.limit)
-    return res.send(users)
-  }
-
-  /**
-   * Render a form to be used for creating a new user.
-   * GET users/create
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
-   */
-  async create ({ request, response, view }) {
+    const transformedUsers = await transform.paginate(users, Transformer)
+    return res.send(transformedUsers)
   }
 
   /**
@@ -50,7 +42,7 @@ class UserController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ req, response }) {
+  async store ({ req, res, transform }) {
     try {
       const userData = req.only([
         'name',
@@ -60,7 +52,8 @@ class UserController {
       ])
 
       const user = User.create(userData)
-      return res.status(201).send(user)
+      const transformedUser = await transform.paginate(user, Transformer)
+      return res.status(201).send(transformedUser)
     } catch (err) {
       return res.status(400).send({
         message: 'Não foi possível criar este usuário no momento!'
@@ -77,21 +70,10 @@ class UserController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async show ({ params: { id }, req, res, view }) {
+  async show ({ params: { id }, req, res, transform }) {
     const user = await User.findOrFail(id)
-    return res.send(user)
-  }
-
-  /**
-   * Render a form to update an existing user.
-   * GET users/:id/edit
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
-   */
-  async edit ({ params, request, response, view }) {
+    const transformedUser = await transform.paginate(user, Transformer)
+    return res.send(transformedUser)
   }
 
   /**
@@ -102,7 +84,7 @@ class UserController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update ({ params: { id }, req, res }) {
+  async update ({ params: { id }, req, res, transform }) {
     const user = await User.findOrFail(id)
     const userData = req.only([
       'name',
@@ -112,7 +94,8 @@ class UserController {
     ])
     user.merge(userData)
     await user.save()
-    return res.send(user)
+    const transformedUser = await transform.paginate(user, Transformer)
+    return res.send(transformedUser)
   }
 
   /**

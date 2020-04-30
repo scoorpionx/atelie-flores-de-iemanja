@@ -7,6 +7,7 @@
 const Order = use('App/Models/Order')
 const Database = use('Database')
 const Service = use('App/Services/Order/OrderServices')
+const Transformer = use('App/Transformers/Admin/OrderTransformer')
 
 /**
  * Resourceful controller for interacting with orders
@@ -21,21 +22,21 @@ class OrderController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ req, res, paginate }) {
+  async index ({ req, res, pagination, transform }) {
     const { status, id } = req.only(['status', 'id'])
     const query = Order.query()
 
     if(status && id) {
-      query.where('status', status)
-      query.orWhere('id', 'LIKE', `%${id}%`)
+      query.where('status', status).orWhere('id', 'LIKE', `%${id}%`)
     } else if(status) {
       query.where('status', status)
     } else if(id) {
       query.orWhere('id', 'LIKE', `%${id}%`)
     }
 
-    const orders = query.paginate(paginate.page, paginate.limit)
-    return res.sen(orders)
+    const orders = await query.paginate(pagination.page, pagination.limit)
+    const TransformedOrders = await transform.item(orders, Transformer)
+    return res.sen(TransformedOrders)
   }
 
   /**
@@ -46,19 +47,21 @@ class OrderController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ req, res }) {
+  async store ({ req, res, transform }) {
     const trx = await Database.beginTransaction()
 
     try {
       const { user_id, items, status } = req.all()
-      let order = await Order.create({ user_id, status }, trx)
+      var order = await Order.create({ user_id, status }, trx)
       const service = new Service(order, trx)
       if(items && items.length > 0) {
         await service.syncItems(items)
       }
       await trx.commit()
 
-      return res.status(201).send(order)
+      order = await Order.find(order.id)
+      const TransformedOrder = await transform.include('items').item(order, Transformer)
+      return res.status(201).send(TransformedOrder)
     } catch (err) {
       return res.status(400).send({
         message: 'Não foi prossível criar o pedido no momento!'
@@ -75,9 +78,10 @@ class OrderController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async show ({ params: { id }, req, res }) {
+  async show ({ params: { id }, req, res, transform }) {
     const order = await Order.findOrFail(id)
-    return res.send(order)
+    const TransformedOrder = await transform.include('items').item(order, Transformer)
+    return res.send(TransformedOrder)
   }
 
   /**
@@ -99,7 +103,8 @@ class OrderController {
       await service.updateItems(items)
       await order.save(trx)
       await trx.commit()
-      return res.send(order)
+      const TransformedOrder = await transform.include('items').item(order, Transformer)
+      return res.send(TransformedOrder)
     } catch (err) {
       await trx.rollback()
       return res.status(400).send({
