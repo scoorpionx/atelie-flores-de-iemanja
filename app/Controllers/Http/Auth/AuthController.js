@@ -31,7 +31,7 @@ class AuthController {
     async refresh({request, response, auth}) {
         var refresh_token = request.input('refresh_token')
 
-        if(!not) {
+        if(!refresh_token) {
             refresh_token = request.header('refresh_token')
         }
 

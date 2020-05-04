@@ -27,7 +27,7 @@ class ImageController {
       .orderBy('id')
       .paginate(pagination.page, pagination.limit)
 
-    image = await transform.paginate(images, Transformer)
+    images = await transform.paginate(images, Transformer)
     return response.send(images)
   }
 
@@ -41,8 +41,8 @@ class ImageController {
    */
   async store ({ request, response, transform }) {
     try {
-      const fileJar = request.file('images', {
-        types: ['images'],
+      const fileJar = request.file('image', {
+        types: ['image'],
         size: '5mb'
       })
 
@@ -50,6 +50,7 @@ class ImageController {
 
       if(!fileJar.files) {
         const file = await manage_single_upload(fileJar)
+        
         if(file.moved()) {
           const image = await Image.create({
             path: file.fileName,
@@ -63,8 +64,10 @@ class ImageController {
 
           return response.status(201).send({ successes: images, errors: {} })
         }
+        
         return response.status(400).send({
-          message: 'Não foi possível processar esta imagem no momento!'
+          message: 'Não foi possível processar esta imagem no momento!',
+          errors: err          
         })
       }
 

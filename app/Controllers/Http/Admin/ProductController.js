@@ -3,6 +3,8 @@
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
+
+const Database = use('Database')
 const Product = use('App/Models/Product')
 const Transformer = use('App/Transformers/Admin/ProductTransformer')
 
@@ -19,8 +21,8 @@ class ProductController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ req, response, pagination, transform }) {
-    const name = req.input('name')
+  async index ({ request, response, pagination, transform }) {
+    const name = request.input('name')
     const query = Product.query()
 
     if(name) {
@@ -41,20 +43,24 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ req, response, transform }) {
+  async store ({ request, response, transform }) {
+    const trx = await Database.beginTransaction()
     try {
-      const { name, price, image_id } = req.all()
+      const { name, price, image_id } = request.all()
       const product = await Product.create({
         name,
         price,
         image_id
-      })
+      }, trx)
 
-      const transformedProduct = await transform.paginate(product, Transformer)
+      await trx.commit()
+      const transformedProduct = await transform.item(product, Transformer)
       return response.status(201).send(transformedProduct)
     } catch(err) {
+      await trx.rollback()
       return response.status(400).send({
         message: 'Não foi possível criar o produto neste momento!',
+        error: err,
       })
     }
   }
@@ -68,9 +74,9 @@ class ProductController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async show ({ params: { id }, req, response, transform }) {
+  async show ({ params: { id }, request, response, transform }) {
     const product = await Product.findOrFail(id)
-    const transformedProduct = await transform.paginate(product, Transformer)
+    const transformedProduct = await transform.item(product, Transformer)    
     return response.send(transformedProduct)
   }
 
@@ -82,14 +88,14 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update ({ params: { id }, req, response, transform }) {
+  async update ({ params: { id }, request, response, transform }) {
     const product = await Product.findOrFail(id)
     try {
-      const { name, price, image_id } = req.all()
+      const { name, price, image_id } = request.all()
       product.merge({ name, price, image_id })
       await product.save()
 
-      const transformedProduct = await transform.paginate(product, Transformer)
+      const transformedProduct = await transform.item(product, Transformer)
       return response.send(transformedProduct)
     } catch(err) {
       return response.status(400).send({
@@ -106,7 +112,7 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async destroy ({ params: { id }, req, response }) {
+  async destroy ({ params: { id }, request, response }) {
     const product = await Product.findOrFail(id)
     try {
       await product.delete()
