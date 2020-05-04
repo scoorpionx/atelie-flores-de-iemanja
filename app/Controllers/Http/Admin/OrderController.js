@@ -22,8 +22,8 @@ class OrderController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ req, res, pagination, transform }) {
-    const { status, id } = req.only(['status', 'id'])
+  async index ({ request, response, pagination, transform }) {
+    const { status, id } = request.only(['status', 'id'])
     const query = Order.query()
 
     if(status && id) {
@@ -36,7 +36,7 @@ class OrderController {
 
     const orders = await query.paginate(pagination.page, pagination.limit)
     const TransformedOrders = await transform.item(orders, Transformer)
-    return res.sen(TransformedOrders)
+    return response.sen(TransformedOrders)
   }
 
   /**
@@ -47,11 +47,11 @@ class OrderController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ req, res, transform }) {
+  async store ({ request, response, transform }) {
     const trx = await Database.beginTransaction()
 
     try {
-      const { user_id, items, status } = req.all()
+      const { user_id, items, status } = request.all()
       var order = await Order.create({ user_id, status }, trx)
       const service = new Service(order, trx)
       if(items && items.length > 0) {
@@ -61,9 +61,9 @@ class OrderController {
 
       order = await Order.find(order.id)
       const TransformedOrder = await transform.include('items').item(order, Transformer)
-      return res.status(201).send(TransformedOrder)
+      return response.status(201).send(TransformedOrder)
     } catch (err) {
-      return res.status(400).send({
+      return response.status(400).send({
         message: 'Não foi prossível criar o pedido no momento!'
       })
     }
@@ -78,10 +78,10 @@ class OrderController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async show ({ params: { id }, req, res, transform }) {
+  async show ({ params: { id }, request, response, transform }) {
     const order = await Order.findOrFail(id)
     const TransformedOrder = await transform.include('items').item(order, Transformer)
-    return res.send(TransformedOrder)
+    return response.send(TransformedOrder)
   }
 
   /**
@@ -97,17 +97,17 @@ class OrderController {
     const trx = await Database.beginTransaction()
 
     try {
-      const { user_id, items, status } = req.all()
+      const { user_id, items, status } = request.all()
       order.merge({ user_id, status })
       const service = new Service(order, trx)
       await service.updateItems(items)
       await order.save(trx)
       await trx.commit()
       const TransformedOrder = await transform.include('items').item(order, Transformer)
-      return res.send(TransformedOrder)
+      return response.send(TransformedOrder)
     } catch (err) {
       await trx.rollback()
-      return res.status(400).send({
+      return response.status(400).send({
         message: 'Não foi possível atualizar este pedido no momento!'
       })
     }
@@ -121,7 +121,7 @@ class OrderController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async destroy ({ params: { id }, req, res }) {
+  async destroy ({ params: { id }, request, response }) {
     const order = await Order.findOrFail(id)
     const trx = await Database.beginTransaction()
     
@@ -129,10 +129,10 @@ class OrderController {
       await order.items().delete(trx)
       await order.delete(trx)
       await trx.commit()
-      return res.status(204).send()
+      return response.status(204).send()
     } catch (err) {
       await trx.rollback()
-      return res.status(400).send({
+      return response.status(400).send({
         message: 'Erro ao deletar este pedido!'
       })
     }

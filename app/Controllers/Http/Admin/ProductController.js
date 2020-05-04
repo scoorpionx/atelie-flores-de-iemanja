@@ -19,7 +19,7 @@ class ProductController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ req, res, pagination, transform }) {
+  async index ({ req, response, pagination, transform }) {
     const name = req.input('name')
     const query = Product.query()
 
@@ -30,7 +30,7 @@ class ProductController {
     const products = await query.paginate(pagination.page, pagination.limit)
     const transformedProducts = await transform.paginate(products, Transformer)
     
-    return res.send(transformedProducts)
+    return response.send(transformedProducts)
   }
 
   /**
@@ -41,7 +41,7 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ req, res, transform }) {
+  async store ({ req, response, transform }) {
     try {
       const { name, price, image_id } = req.all()
       const product = await Product.create({
@@ -51,9 +51,9 @@ class ProductController {
       })
 
       const transformedProduct = await transform.paginate(product, Transformer)
-      return res.status(201).send(transformedProduct)
+      return response.status(201).send(transformedProduct)
     } catch(err) {
-      return res.status(400).send({
+      return response.status(400).send({
         message: 'Não foi possível criar o produto neste momento!',
       })
     }
@@ -68,10 +68,10 @@ class ProductController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async show ({ params: { id }, req, res, transform }) {
+  async show ({ params: { id }, req, response, transform }) {
     const product = await Product.findOrFail(id)
     const transformedProduct = await transform.paginate(product, Transformer)
-    return res.send(transformedProduct)
+    return response.send(transformedProduct)
   }
 
   /**
@@ -82,7 +82,7 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update ({ params: { id }, req, res, transform }) {
+  async update ({ params: { id }, req, response, transform }) {
     const product = await Product.findOrFail(id)
     try {
       const { name, price, image_id } = req.all()
@@ -90,9 +90,9 @@ class ProductController {
       await product.save()
 
       const transformedProduct = await transform.paginate(product, Transformer)
-      return res.send(transformedProduct)
+      return response.send(transformedProduct)
     } catch(err) {
-      return res.status(400).send({
+      return response.status(400).send({
         message: 'Não foi possível atualizar este produto no momento!'
       })
     }
@@ -106,13 +106,13 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async destroy ({ params: { id }, req, res }) {
+  async destroy ({ params: { id }, req, response }) {
     const product = await Product.findOrFail(id)
     try {
       await product.delete()
-      return res.status(204).send()
+      return response.status(204).send()
     } catch (err) {
-      return res.status(500).send({
+      return response.status(500).send({
         message: 'Não foi possível deletar este produto no momento!'
       })
     }

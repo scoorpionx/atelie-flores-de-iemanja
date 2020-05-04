@@ -20,8 +20,8 @@ class UserController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ req, res, pagination, transform }) {
-    const name = req.input('name')
+  async index ({ request, response, pagination, transform }) {
+    const name = request.input('name')
     const query = User.query()
 
     if(name) {
@@ -31,7 +31,7 @@ class UserController {
 
     const users = await query.paginate(pagination.page, pagination.limit)
     const transformedUsers = await transform.paginate(users, Transformer)
-    return res.send(transformedUsers)
+    return response.send(transformedUsers)
   }
 
   /**
@@ -42,9 +42,9 @@ class UserController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ req, res, transform }) {
+  async store ({ request, response, transform }) {
     try {
-      const userData = req.only([
+      const userData = request.only([
         'name',
         'username',
         'email',
@@ -53,9 +53,9 @@ class UserController {
 
       const user = User.create(userData)
       const transformedUser = await transform.paginate(user, Transformer)
-      return res.status(201).send(transformedUser)
+      return response.status(201).send(transformedUser)
     } catch (err) {
-      return res.status(400).send({
+      return response.status(400).send({
         message: 'Não foi possível criar este usuário no momento!'
       })
     }
@@ -70,10 +70,10 @@ class UserController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async show ({ params: { id }, req, res, transform }) {
+  async show ({ params: { id }, request, response, transform }) {
     const user = await User.findOrFail(id)
     const transformedUser = await transform.paginate(user, Transformer)
-    return res.send(transformedUser)
+    return response.send(transformedUser)
   }
 
   /**
@@ -84,9 +84,9 @@ class UserController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update ({ params: { id }, req, res, transform }) {
+  async update ({ params: { id }, request, response, transform }) {
     const user = await User.findOrFail(id)
-    const userData = req.only([
+    const userData = request.only([
       'name',
       'username',
       'email',
@@ -95,7 +95,7 @@ class UserController {
     user.merge(userData)
     await user.save()
     const transformedUser = await transform.paginate(user, Transformer)
-    return res.send(transformedUser)
+    return response.send(transformedUser)
   }
 
   /**
@@ -106,13 +106,13 @@ class UserController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async destroy ({ params: { id }, req, res }) {
+  async destroy ({ params: { id }, request, response }) {
     const user = await User.findOrFail(id)
     try {
       await user.delete()
-      return res.status(204).send()
+      return response.status(204).send()
     } catch (err) {
-      return res.status(500).send({
+      return response.status(500).send({
         message: 'Não foi possível deletar o usuário no momento'
       })
     }

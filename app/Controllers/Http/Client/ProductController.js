@@ -4,6 +4,9 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
+const Product = use('App/Models/Product')
+const Transformer = use('App/Transformers/Admin/ProductTransformer')
+
 /**
  * Resourceful controller for interacting with products
  */
@@ -17,7 +20,18 @@ class ProductController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ request, response, view }) {
+  async index ({ request, response, pagination, transform }) {
+    const title = request.input('title')
+    const query = Product.query()
+
+    if(title) {
+      query.where('name', 'LIKE', `%${title}%`)
+    }
+
+    const products = await query.paginate(pagination.page, pagination.limit)
+    const transformedProducts = await transform.paginate(products, Transformer)
+    
+    return response.send(transformedProducts)
   }
 
   /**
