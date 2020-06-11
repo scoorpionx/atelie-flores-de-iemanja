@@ -7,6 +7,7 @@ class ImageSchema extends Schema {
   up () {
     this.create('images', (table) => {
       table.increments()
+      table.integer('product_id').unsigned()
       table.string('path', 255)
       table.integer('size').unsigned()
       table.string('original_name', 100)

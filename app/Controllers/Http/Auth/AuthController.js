@@ -8,8 +8,8 @@ class AuthController {
     async register({request, response}) {
         const trx = await Database.beginTransaction()
         try {
-            const { name, email, password } = request.all()
-            const user = await User.create({name, email, password}, trx)
+            const { username, name, email, password } = request.all()
+            const user = await User.create({username, name, email, password}, trx)
             const userRole = await Role.findBy('slug', 'admin')
             await user.roles().attach([userRole.id], null, trx)
             await trx.commit()
@@ -18,6 +18,7 @@ class AuthController {
             await trx.rollback()
             return response.status(400).send({
                 message: 'Erro ao realizar cadastro',
+                error: err.message
             })
         }
     }

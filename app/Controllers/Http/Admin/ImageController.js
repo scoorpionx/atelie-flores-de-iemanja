@@ -46,6 +46,8 @@ class ImageController {
         size: '5mb'
       })
 
+      const { product_id } = request.all()
+
       let images = []
 
       if(!fileJar.files) {
@@ -53,6 +55,7 @@ class ImageController {
         
         if(file.moved()) {
           const image = await Image.create({
+            product_id: product_id,
             path: file.fileName,
             size: file.size,
             original_name: file.clientName,
@@ -62,12 +65,12 @@ class ImageController {
           const transformedImage = await transform.item(image, Transformer)
           images.push(transformedImage)
 
-          return response.status(201).send({ successes: images, errors: {} })
+          return response.status(201).send(transformedImage)
         }
         
         return response.status(400).send({
           message: 'Não foi possível processar esta imagem no momento!',
-          errors: err          
+          errors: err.message          
         })
       }
 
@@ -94,7 +97,8 @@ class ImageController {
       })
     } catch (err) {
       return response.status(400).send({
-        message: 'Não possível processar a sua solicitação!'
+        message: 'Não possível processar a sua solicitação!',
+        error: err.message 
       })
     }
   }

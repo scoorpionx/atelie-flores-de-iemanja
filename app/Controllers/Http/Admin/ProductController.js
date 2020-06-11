@@ -21,13 +21,22 @@ class ProductController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ request, response, pagination, transform }) {
-    const name = request.input('name')
+  async index ({ request, response, pagination, transform, auth }) {
+    var uid = await auth.getUser()
+    uid = uid.$attributes.id
+
     const query = Product.query()
 
-    if(name) {
-      query.where('name', 'LIKE', `%${name}%`)
-    }
+    // query.where('user_id', uid)
+
+    query
+        .select([
+          'products.*',
+          Database.raw('GROUP_CONCAT (`images`.`id`, ",", `images`.`path`) AS images')
+        ])
+        .where('products.user_id', uid)
+        .leftJoin('images', 'products.id', 'images.product_id')
+        .groupBy('products.id')
 
     const products = await query.paginate(pagination.page, pagination.limit)
     const transformedProducts = await transform.paginate(products, Transformer)
@@ -43,14 +52,17 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ request, response, transform }) {
+  async store ({ request, response, transform, auth }) {
     const trx = await Database.beginTransaction()
     try {
-      const { name, price, image_id } = request.all()
+      const { name, price, description, image_id } = request.all()
+      var uid = await auth.getUser()
+      uid = uid.$attributes.id
       const product = await Product.create({
+        user_id: uid,
         name,
         price,
-        image_id
+        description,
       }, trx)
 
       await trx.commit()
@@ -58,9 +70,10 @@ class ProductController {
       return response.status(201).send(transformedProduct)
     } catch(err) {
       await trx.rollback()
+      console.log(err.message)
       return response.status(400).send({
         message: 'Não foi possível criar o produto neste momento!',
-        error: err,
+        error: err.message,
       })
     }
   }
@@ -76,7 +89,7 @@ class ProductController {
    */
   async show ({ params: { id }, request, response, transform }) {
     const product = await Product.findOrFail(id)
-    const transformedProduct = await transform.item(product, Transformer)    
+    const transformedProduct = await transform.collection(product, Transformer)    
     return response.send(transformedProduct)
   }
 
@@ -95,7 +108,7 @@ class ProductController {
       product.merge({ name, price, image_id })
       await product.save()
 
-      const transformedProduct = await transform.item(product, Transformer)
+      const transformedProduct = await transform.collection(product, Transformer)
       return response.send(transformedProduct)
     } catch(err) {
       return response.status(400).send({

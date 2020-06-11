@@ -5,9 +5,9 @@ const Schema = use('Schema')
 
 class ImageProductFkSchema extends Schema {
   up () {
-    this.table('products', (table) => {
+    this.table('images', (table) => {
       // alter table
-      table.foreign('image_id').references('id').inTable('images').onDelete('cascade')
+      table.foreign('product_id').references('id').inTable('products').onDelete('cascade')
     })
   }
 
