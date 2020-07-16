@@ -11,3 +11,4 @@ tmp
 database/*.sqlite
 
 public/images/*
+public/uploads/*
