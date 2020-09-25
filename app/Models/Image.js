@@ -5,17 +5,19 @@ const Model = use('Model')
 const Env = use('Env')
 
 class Image extends Model {
-    product() {
-        return this.belongsTo('App/Models/Product')
-    }
-    
-    static get computed() {
-        return ['url']
-    }
-    
-    getUrl({ path }) {
-        return `${Env.get('APP_URL')}/images/${path}`
-    }
+  product() {
+    return this.belongsTo('App/Models/Product')
+  }
+
+  static get computed() {
+    return ['url']
+  }
+
+  getUrl({
+    path
+  }) {
+    return `${Env.get('APP_URL')}/uploads/${path}`
+  }
 }
 
 module.exports = Image

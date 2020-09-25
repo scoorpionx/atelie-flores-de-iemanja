@@ -14,18 +14,18 @@ class ProductTransformer extends BumblebeeTransformer {
   defaultIclude() {
     return ['image']
   }
-  
+
   /**
    * This method is used to transform the data.
    */
-  transform (model) {
+  transform(model) {
     return {
-     data: model
+      data: model
     }
   }
 
-  transform (model) {
-    if(!model.images) {
+  transform(model) {
+    if (!model.images) {
       return {
         id: model.id,
         name: model.name,
@@ -33,20 +33,20 @@ class ProductTransformer extends BumblebeeTransformer {
         description: model.description,
       }
     }
-    
+
     /**
      * String treatment to become json
      **/
     let str = model.images
     let res = str.split(",")
     let images = []
-    for(let i = 0; i < res.length; i++) {
-      if(i%2===0) {
+    for (let i = 0; i < res.length; i++) {
+      if (i % 2 === 0) {
         var id = '"id":' + res[i]
       } else {
-        let path = `${Env.get('APP_URL')}/images/${res[i]}`
+        let path = `${Env.get('APP_URL')}/uploads/${res[i]}`
         path = '"path":"' + path + '"'
-        let row = '{'+id+', '+path+'}'
+        let row = '{' + id + ', ' + path + '}'
         let obj = JSON.parse(row)
         images.push(obj)
       }
